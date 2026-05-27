@@ -1700,6 +1700,7 @@ document.getElementById('pwBtn').addEventListener('click', attemptLogin);
 document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
 
 // Skip gate if valid session exists
+let _appInited = false;
 if (hasValidSession()) { showApp(); }
 
 /* ── Supabase Data Layer ──────────────────────── */
@@ -1799,7 +1800,6 @@ function initUI() {
 initUI(); // always runs, gate is just a visual overlay
 
 // ── Phase 2: Load Supabase data after auth ────────────────────────────
-let _appInited = false;
 async function initApp() {
   if (_appInited) return;
   _appInited = true;
