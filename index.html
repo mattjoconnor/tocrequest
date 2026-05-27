@@ -1783,7 +1783,7 @@ function initUI() {
   // Re-filter sources when feed name is picked from dropdown (user interaction only)
   const fnNative = document.getElementById('feedName');
   if (fnNative) {
-    fnNative.addEventListener('change', () => syncDropdownExclusions());
+    fnNative.addEventListener('change', () => setTimeout(syncDropdownExclusions, 0));
   }
   document.querySelectorAll('.cs-wrap.compact').forEach(w=>{ const inst=new CustomSelect(w,{searchable:false}); csMap[w.querySelector('select').id]=inst; });
   document.querySelectorAll('.audio-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.audio-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedAudio=btn.dataset.val; }); });
