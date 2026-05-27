@@ -1426,13 +1426,6 @@ document.getElementById('templateNameInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('saveTemplateBtn').click();
 });
 
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'toc-presets.json'; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-});
-
-// Import presets from JSON
 
 /* ── Add + Next ─────────────────────────────────────────────── */
 document.getElementById('addNextBtn').addEventListener('click', () => {
