@@ -1022,10 +1022,12 @@ class CustomSelect {
   getValue() { return this.native.value; }
   setValue(v) { this.native.value=v; this._sync(); }
   rebuildFromList(list, placeholder) {
+    const _saved=this.native.value;
     this.native.innerHTML='';
     if (placeholder) { const ph=document.createElement('option'); ph.value=''; ph.textContent=placeholder; this.native.appendChild(ph); }
     list.forEach(item=>{ const o=document.createElement('option'); o.value=item; o.textContent=item; this.native.appendChild(o); });
-    this._buildOptions(); this._sync();
+    this._buildOptions();
+    if (_saved && list.includes(_saved)) this.native.value=_saved; this._sync();
   }
 }
 
@@ -1924,6 +1926,20 @@ async function renderHistory() {
 document.getElementById('histBtn').addEventListener('click',()=>{ renderHistory(); document.getElementById('histModal').classList.add('is-open'); });
 document.getElementById('histClose').addEventListener('click',()=>document.getElementById('histModal').classList.remove('is-open'));
 document.getElementById('histModal').addEventListener('click',e=>{ if(e.target===document.getElementById('histModal')) document.getElementById('histModal').classList.remove('is-open'); });
+
+
+// Force fresh data whenever user returns to the tab
+function refreshData() {
+  if (typeof loadListsFromDB === 'function' && typeof rebuildSelectForKey === 'function') {
+    loadListsFromDB().then(() => {
+      ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
+    });
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshData();
+});
+window.addEventListener('focus', refreshData);
 
 </script>
 </body>
