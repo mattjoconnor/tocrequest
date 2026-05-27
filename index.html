@@ -255,7 +255,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 .queue-empty-icon { color:var(--border); margin-bottom:var(--s3); }
 .queue-empty-title { font-size:var(--t-sm); font-weight:700; color:var(--ink-mid); margin-bottom:.3em; }
 .queue-empty-hint { font-size:var(--t-xs); color:var(--ink-light); }
-.feed-table { width:100%; border-collapse:collapse; }
+.feed-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.feed-table { width:100%; border-collapse:collapse; min-width:580px; }
 .feed-table thead th { font-size:var(--t-xs); font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-mid); background:var(--surface); padding:var(--s3) var(--s4); text-align:left; border-bottom:1.5px solid var(--border); white-space:nowrap; }
 .feed-table tbody td { font-size:var(--t-sm); font-weight:500; padding:var(--s3) var(--s4); border-bottom:1px solid var(--surface-2); vertical-align:middle; white-space:nowrap; }
 .feed-table tbody tr:last-child td { border-bottom:none; }
@@ -539,6 +540,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   .edit-banner-sub { display: none; }
 
   /* ── Feed Queue Table — horizontal scroll ── */
+  #queueCard { overflow: visible; }
   .feed-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .feed-table { min-width: 620px; }
   .feed-table th,
@@ -690,7 +692,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   </div>
 </div>
 
-<div class="card" style="overflow:hidden;">
+<div class="card" id="queueCard">
   <div class="card-header"><span class="card-title">Feed Queue</span></div>
   <div class="queue-empty" id="emptyState">
     <div class="queue-empty-icon">
@@ -1698,7 +1700,9 @@ let _appInited = false;
 async function initApp() {
   if (_appInited) return;
   _appInited = true;
-
+  try { await _initAppCore(); } catch(e) { console.error('initApp error:', e); }
+}
+async function _initAppCore() {
   // Clear any existing CustomSelect DOM before reinitializing
   document.querySelectorAll('.cs-wrap:not(.compact)').forEach(w => {
     w.querySelectorAll('.cs-trigger, .cs-panel').forEach(el => el.remove());
@@ -1710,13 +1714,17 @@ async function initApp() {
   await loadListsFromDB();
 
   // Realtime — refresh dropdowns when admin updates lists
-  if (db) {
-    db.channel('toc_lists_rt')
-      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'toc_lists' }, () => {
-        loadListsFromDB();
-      })
-      .subscribe();
-  }
+  try {
+    if (db) {
+      db.channel('toc_lists_rt')
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'toc_lists' }, () => {
+          loadListsFromDB().then(() => {
+            ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
+          });
+        })
+        .subscribe();
+    }
+  } catch(e) { console.warn('Realtime unavailable:', e.message); }
 
   initSelect('wrap-feedName','feedNames','— Select feed —',true);
   initSelect('wrap-source','sources','— Select source —',true);
