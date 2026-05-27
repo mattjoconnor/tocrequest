@@ -1426,11 +1426,6 @@ document.getElementById('templateNameInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('saveTemplateBtn').click();
 });
 
-// Export all presets as JSON
-document.getElementById('exportPresetsBtn').addEventListener('click', async () => {
-  const presets = await loadPresetsFromDB();
-  if (!presets.length) { alert('No presets to export.'); return; }
-  const blob = new Blob([JSON.stringify(presets, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'toc-presets.json'; a.click();
@@ -1438,73 +1433,6 @@ document.getElementById('exportPresetsBtn').addEventListener('click', async () =
 });
 
 // Import presets from JSON
-document.getElementById('importPresetsFile').addEventListener('change', e => {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const imported = JSON.parse(ev.target.result);
-      if (!Array.isArray(imported)) throw new Error('Invalid format');
-      if (!confirm(`Import ${imported.length} preset(s) from "${file.name}"?`)) return;
-      for (const p of imported) { savePresetToDB(p); }
-      renderPresetList();
-      showStatus(`${imported.length} preset(s) imported.`);
-    } catch(err) { alert('Could not read presets file. Make sure it is a valid JSON export.'); }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
-});
-document.getElementById('cancelEditBtn') && document.getElementById('cancelEditBtn').addEventListener('click',clearEntryForm);
-document.getElementById('editBannerCancel').addEventListener('click',clearEntryForm);
-
-/* ── Increment helpers ───────────────────────────────────────
-   Detects a trailing integer in a string and bumps it by 1.
-   "TX TWD 9901" → "TX TWD 9902"
-   "NORTHBOUND 1" → "NORTHBOUND 2"
-   Preserves zero-padding width: "CAM 09" → "CAM 10"
-─────────────────────────────────────────────────────────── */
-function incrementStr(str) {
-  if (!str) return null;
-  const m = str.match(/^([\s\S]*?)(\d+)(\s*)$/);
-  if (!m) return null;
-  const prefix = m[1], numStr = m[2], suffix = m[3];
-  const next = parseInt(numStr, 10) + 1;
-  // preserve zero-pad only if original had a leading zero
-  const padded = numStr[0] === '0' && numStr.length > 1
-    ? String(next).padStart(numStr.length, '0')
-    : String(next);
-  return prefix + padded + suffix;
-}
-
-// Shared validate-and-collect logic
-function collectEntry() {
-  const entry = {
-    feedName:    csGet('feedName'),
-    sourceName:  document.getElementById('sourceName').value.trim(),
-    source:      csGet('source'),
-    destination: csGet('destination'),
-    audio:       selectedAudio,
-    format:      selectedFormat
-  };
-  const missing = [];
-  if (!entry.feedName)    missing.push('Feed Name');
-  if (!entry.source)      missing.push('Source');
-  if (!entry.destination) missing.push('Destination');
-  if (!entry.sourceName)  missing.push('Source Name');
-  if (!entry.audio)       missing.push('Audio (channel count)');
-  if (!entry.format)      missing.push('Video Format');
-  return { entry, missing };
-}
-
-function showMissingToast(missing) {
-  showToast(
-    missing.length === 1 ? `${missing[0]} is required` : `${missing.length} fields required`,
-    missing.length === 1 ? [] : missing
-  );
-  const focusMap = {'Feed Name':'wrap-feedName','Source':'wrap-source','Destination':'wrap-destination','Source Name':'sourceName'};
-  const el = document.getElementById(focusMap[missing[0]]);
-  if (el) el.scrollIntoView({behavior:'smooth',block:'center'});
-}
 
 /* ── Add + Next ─────────────────────────────────────────────── */
 document.getElementById('addNextBtn').addEventListener('click', () => {
