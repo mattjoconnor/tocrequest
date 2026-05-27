@@ -482,7 +482,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 .pw-error { font-size:var(--t-xs); color:var(--red); font-weight:600; opacity:0; transition:opacity .2s; }
 .pw-error.visible { opacity:1; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -1213,7 +1213,7 @@ document.getElementById('presetsClose').addEventListener('click', () => document
 document.getElementById('presetsModal').addEventListener('click', e => { if (e.target === document.getElementById('presetsModal')) document.getElementById('presetsModal').classList.remove('is-open'); });
 
 // Save current as preset
-document.getElementById('savePresetBtn').addEventListener('click', () => {
+document.getElementById('savePresetBtn').addEventListener('click', async () => {
   const name = document.getElementById('presetNameInput').value.trim();
   if (!name) { document.getElementById('presetNameInput').focus(); return; }
   const preset = {
@@ -1251,7 +1251,7 @@ document.getElementById('importPresetsFile').addEventListener('change', e => {
       const imported = JSON.parse(ev.target.result);
       if (!Array.isArray(imported)) throw new Error('Invalid format');
       if (!confirm(`Import ${imported.length} preset(s) from "${file.name}"?`)) return;
-      for (const p of imported) { await savePresetToDB(p); }
+      for (const p of imported) { savePresetToDB(p); }
       renderPresetList();
       showStatus(`${imported.length} preset(s) imported.`);
     } catch(err) { alert('Could not read presets file. Make sure it is a valid JSON export.'); }
