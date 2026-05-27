@@ -541,8 +541,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 
   /* ── Feed Queue — hide table, show cards on mobile ── */
   #queueCard { overflow: visible; }
-  .feed-table-wrap { display: none; }
-  .mobile-queue { display: block; padding: var(--s2) var(--s4) var(--s3); }
+  .feed-table-wrap { display: none !important; }
+  .mobile-queue { display: block !important; padding: var(--s2) var(--s4) var(--s3); }
 
   /* ── Bottom Bar ── */
   .bottom-bar { padding: var(--s3) var(--s4); gap: var(--s2); }
@@ -1740,24 +1740,31 @@ async function deleteRequestFromDB(id) {
 }
 
 /* ── App Init ────────────────────────────────── */
+// ── Phase 1: Init UI immediately (sync, no Supabase dependency) ──────
+// Runs once on page load so the form is always ready
+function initUI() {
+  initSelect('wrap-feedName','feedNames','— Select feed —',true);
+  initSelect('wrap-source','sources','— Select source —',true);
+  initSelect('wrap-destination','destinations','— Select dest —',true);
+  csMap['feedName']=csMap['feedNames']; csMap['source']=csMap['sources']; csMap['destination']=csMap['destinations'];
+  document.querySelectorAll('.cs-wrap.compact').forEach(w=>{ const inst=new CustomSelect(w,{searchable:false}); csMap[w.querySelector('select').id]=inst; });
+  document.querySelectorAll('.audio-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.audio-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedAudio=btn.dataset.val; }); });
+  document.querySelectorAll('.format-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedFormat=btn.dataset.val; }); });
+  renderQueue();
+  syncDropdownExclusions();
+}
+initUI(); // always runs, gate is just a visual overlay
+
+// ── Phase 2: Load Supabase data after auth ────────────────────────────
 let _appInited = false;
 async function initApp() {
   if (_appInited) return;
   _appInited = true;
-  try { await _initAppCore(); } catch(e) { console.error('initApp error:', e); }
-}
-async function _initAppCore() {
-  // Clear any existing CustomSelect DOM before reinitializing
-  document.querySelectorAll('.cs-wrap:not(.compact)').forEach(w => {
-    w.querySelectorAll('.cs-trigger, .cs-panel').forEach(el => el.remove());
-  });
-  document.querySelectorAll('.cs-wrap.compact').forEach(w => {
-    w.querySelectorAll('.cs-trigger, .cs-panel').forEach(el => el.remove());
-  });
-
+  // Load lists from Supabase and refresh dropdowns
   await loadListsFromDB();
-
-  // Realtime — refresh dropdowns when admin updates lists
+  ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
+  syncDropdownExclusions();
+  // Realtime subscription (best-effort)
   try {
     if (db) {
       db.channel('toc_lists_rt')
@@ -1769,16 +1776,6 @@ async function _initAppCore() {
         .subscribe();
     }
   } catch(e) { console.warn('Realtime unavailable:', e.message); }
-
-  initSelect('wrap-feedName','feedNames','— Select feed —',true);
-  initSelect('wrap-source','sources','— Select source —',true);
-  initSelect('wrap-destination','destinations','— Select dest —',true);
-  csMap['feedName']=csMap['feedNames']; csMap['source']=csMap['sources']; csMap['destination']=csMap['destinations'];
-  document.querySelectorAll('.cs-wrap.compact').forEach(w=>{ const inst=new CustomSelect(w,{searchable:false}); csMap[w.querySelector('select').id]=inst; });
-  document.querySelectorAll('.audio-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.audio-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedAudio=btn.dataset.val; }); });
-  document.querySelectorAll('.format-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedFormat=btn.dataset.val; }); });
-  renderQueue();
-  syncDropdownExclusions();
 }
 
 /* ── Excel List Manager ──────────────────────── */
