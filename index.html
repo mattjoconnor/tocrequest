@@ -48,7 +48,7 @@ body { font-family:'Red Hat Display',sans-serif; background:var(--surface-2); co
 .header-right { display:flex; align-items:center; gap:var(--s3); }
 .feed-badge { font-size:var(--t-xs); font-weight:700; color:var(--ink-mid); background:var(--white); border:1.5px solid var(--border); border-radius:20px; padding:.3em .85em; display:none; }
 .feed-badge.visible { display:inline-block; }
-.btn-admin { font-family:'Red Hat Display',sans-serif; font-size:var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--white); border:1.5px solid var(--border); border-radius:var(--ctrl-r); padding:.5em 1em; cursor:pointer; display:flex; align-items:center; gap:.4em; transition:all .12s; color:var(--ink-mid); }
+.btn-admin { text-decoration:none; font-family:'Red Hat Display',sans-serif; font-size:var(--t-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--white); border:1.5px solid var(--border); border-radius:var(--ctrl-r); padding:.5em 1em; cursor:pointer; display:flex; align-items:center; gap:.4em; transition:all .12s; color:var(--ink-mid); }
 .btn-admin:hover { border-color:var(--ink); color:var(--ink); }
 
 .card { max-width:1000px; margin:0 auto var(--s4); background:var(--white); border-radius:var(--card-r); box-shadow:var(--card-sh); overflow:visible; }
@@ -498,7 +498,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       Presets
     </button>
-    <button class="btn-admin" id="adminBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Manage Lists</button>
+    <a class="btn-admin" href="admin.html" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Manage Lists</a>
   </div>
 </header>
 
@@ -1609,6 +1609,16 @@ async function initApp() {
   });
 
   await loadListsFromDB();
+
+  // Realtime — refresh dropdowns when admin updates lists
+  if (db) {
+    db.channel('toc_lists_rt')
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'toc_lists' }, () => {
+        loadListsFromDB();
+      })
+      .subscribe();
+  }
+
   initSelect('wrap-feedName','feedNames','— Select feed —',true);
   initSelect('wrap-source','sources','— Select source —',true);
   initSelect('wrap-destination','destinations','— Select dest —',true);

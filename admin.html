@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P&TO · Lists Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:        #0d0d0d;
+  --ink-mid:    #666;
+  --ink-light:  #aaa;
+  --white:      #ffffff;
+  --surface:    #f6f6f4;
+  --surface-2:  #eeede9;
+  --border:     #d4d3cf;
+  --border-hover: #a0a09a;
+  --red:        #dc2626;
+  --amber:      #e09a1a;
+  --focus-ring: rgba(13,13,13,.1);
+  --r:          8px;
+  --ctrl-h:     2.75rem;
+  --ctrl-r:     7px;
+}
+
+body {
+  font-family: 'Red Hat Display', sans-serif;
+  background: var(--surface-2);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ── Password Gate ─────────────────────────────── */
+.pw-gate { position:fixed; inset:0; z-index:9999; background:var(--surface-2); display:flex; align-items:center; justify-content:center; padding:2rem; }
+.pw-gate.hidden { display:none; }
+.pw-card { background:var(--white); border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05); padding:2.5rem 2rem; width:100%; max-width:360px; display:flex; flex-direction:column; align-items:center; gap:1.25rem; text-align:center; }
+.pw-badge { background:var(--ink); color:var(--white); font-size:1.25rem; font-weight:900; letter-spacing:.04em; padding:.2em .55em; border-radius:7px; line-height:1; }
+.pw-title { font-size:1.1rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+.pw-sub { font-size:.875rem; color:var(--ink-mid); margin-top:-.5rem; }
+.pw-input { font-family:inherit; font-size:1rem; font-weight:500; color:var(--ink); background:var(--white); border:1.5px solid var(--border); border-radius:var(--ctrl-r); height:var(--ctrl-h); padding:0 1rem; outline:none; width:100%; text-align:center; letter-spacing:.1em; transition:border-color .15s,box-shadow .15s; }
+.pw-input:focus { border-color:var(--ink); box-shadow:0 0 0 3px var(--focus-ring); }
+.pw-input.error { border-color:var(--red); }
+.pw-btn { font-family:inherit; font-size:.8125rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; background:var(--ink); color:var(--white); border:none; border-radius:var(--ctrl-r); height:var(--ctrl-h); padding:0 2rem; cursor:pointer; width:100%; transition:opacity .12s; }
+.pw-btn:hover { opacity:.82; }
+.pw-btn:disabled { opacity:.45; cursor:not-allowed; }
+.pw-error { font-size:.75rem; color:var(--red); font-weight:600; opacity:0; transition:opacity .2s; }
+.pw-error.visible { opacity:1; }
+
+/* ── App Layout ────────────────────────────────── */
+.app { display:none; flex-direction:column; min-height:100vh; }
+.app.visible { display:flex; }
+
+.top-bar {
+  background: var(--white);
+  border-bottom: 1.5px solid var(--border);
+  padding: 0 2.5rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.top-badge { background:var(--ink); color:var(--white); font-size:1rem; font-weight:900; letter-spacing:.04em; padding:.18em .5em; border-radius:5px; line-height:1; }
+.top-title { font-size:1.25rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+.top-sub { font-size:.75rem; font-weight:600; color:var(--ink-light); letter-spacing:.12em; text-transform:uppercase; margin-left:.25rem; }
+.back-link { margin-left:auto; font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mid); text-decoration:none; display:flex; align-items:center; gap:.4em; transition:color .12s; }
+.back-link:hover { color:var(--ink); }
+
+.save-indicator { font-size:.75rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-light); padding:.3em .8em; border-radius:4px; transition:all .2s; }
+.save-indicator.saving { color:var(--amber); }
+.save-indicator.saved { color:#16a34a; }
+
+.main { flex:1; padding:2rem 2.5rem; max-width:1100px; margin:0 auto; width:100%; }
+
+.section-title { font-size:.7rem; font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-mid); margin-bottom:.75rem; }
+
+/* ── Grid ──────────────────────────────────────── */
+.grid-card { background:var(--white); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04); overflow:hidden; }
+
+.xl-table { width:100%; border-collapse:collapse; }
+.xl-table thead tr { background:var(--surface); }
+.xl-table th { font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-mid); padding:.75rem 1rem; border-bottom:1.5px solid var(--border); text-align:left; white-space:nowrap; }
+.xl-table th:first-child { width:2.5rem; text-align:center; background:var(--surface-2); border-right:1px solid var(--border); }
+.xl-table th:last-child { width:2.5rem; }
+.xl-table td { border-bottom:1px solid var(--border); padding:0; vertical-align:middle; }
+.xl-table td.row-num { font-size:.7rem; font-weight:700; color:var(--ink-light); text-align:center; background:var(--surface); border-right:1px solid var(--border); padding:.5rem; user-select:none; }
+.xl-table tbody tr:last-child td { border-bottom:none; }
+.xl-table tbody tr:hover td.row-num { background:var(--surface-2); }
+
+.xl-cell { display:block; width:100%; font-family:inherit; font-size:.875rem; font-weight:500; color:var(--ink); border:none; outline:none; background:transparent; padding:.65rem 1rem; }
+.xl-cell:focus { background:#fffde7; }
+.xl-cell::placeholder { color:var(--ink-light); font-weight:400; }
+td:has(.xl-cell:focus) { box-shadow:inset 0 0 0 2px var(--ink); }
+
+.xl-del { background:none; border:none; color:var(--ink-light); cursor:pointer; padding:.5rem .6rem; font-size:.875rem; transition:color .1s; display:block; width:100%; text-align:center; }
+.xl-del:hover { color:var(--red); }
+
+/* ── Footer actions ────────────────────────────── */
+.grid-footer { padding:1rem 1.25rem; border-top:1.5px dashed var(--border); display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; }
+
+.btn { font-family:inherit; font-size:.75rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; border-radius:var(--ctrl-r); height:2.5rem; padding:0 1.1rem; cursor:pointer; transition:all .12s; white-space:nowrap; display:inline-flex; align-items:center; gap:.4em; }
+.btn-ink { background:var(--ink); color:var(--white); border:1.5px solid var(--ink); }
+.btn-ink:hover { opacity:.82; }
+.btn-ghost { background:var(--white); color:var(--ink); border:1.5px solid var(--border); }
+.btn-ghost:hover { border-color:var(--ink); }
+.btn-csv { background:var(--white); color:var(--ink-mid); border:1.5px solid var(--border); font-family:inherit; font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; border-radius:var(--ctrl-r); padding:.4em .9em; cursor:pointer; transition:all .12s; display:inline-flex; align-items:center; gap:.4em; }
+.btn-csv:hover { border-color:var(--ink); color:var(--ink); }
+
+.tip { font-size:.7rem; color:var(--ink-light); margin-left:auto; }
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div class="pw-gate" id="pwGate">
+  <div class="pw-card">
+    <div class="pw-badge">P&amp;TO</div>
+    <div class="pw-title">Lists Admin</div>
+    <div class="pw-sub">Enter your access password</div>
+    <input type="password" class="pw-input" id="pwInput" placeholder="Enter password" autocomplete="new-password">
+    <button class="pw-btn" id="pwBtn">Enter</button>
+    <div class="pw-error" id="pwError">Incorrect password — try again</div>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" id="app">
+  <div class="top-bar">
+    <span class="top-badge">P&amp;TO</span>
+    <span class="top-title">Lists Admin</span>
+    <span class="save-indicator" id="saveIndicator"></span>
+    <a class="back-link" href="index.html">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      TOC Request
+    </a>
+  </div>
+
+  <div class="main">
+    <p class="section-title">Feed Names &nbsp;·&nbsp; Sources &nbsp;·&nbsp; Destinations</p>
+    <div class="grid-card">
+      <table class="xl-table" id="xlTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Feed Name</th>
+            <th>Source</th>
+            <th>Destination</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="xlBody"></tbody>
+      </table>
+      <div class="grid-footer">
+        <button class="btn btn-ink" id="addRowBtn">+ Add Row</button>
+        <button class="btn btn-ghost" id="clearEmptyBtn">Remove Empty Rows</button>
+        <button class="btn-csv" id="exportBtn">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+        <label class="btn-csv" for="importFile">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import CSV
+          <input type="file" id="importFile" accept=".csv,.txt" style="display:none;">
+        </label>
+        <span class="tip">Tab between columns &nbsp;·&nbsp; Enter to add row &nbsp;·&nbsp; Changes save automatically</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://fcjidrzcimzhauwdccup.supabase.co';
+const SUPA_KEY = 'sb_publishable_sjrXMt_YICKzTXwwPLZalA_0DqjvvtB';
+const SESSION_TTL = 8 * 60 * 60 * 1000;
+
+let db = null;
+try { const { createClient } = supabase; db = createClient(SUPA_URL, SUPA_KEY); }
+catch(e) { console.error('Supabase init:', e); }
+
+// ── Session ─────────────────────────────────────
+function hasSession() {
+  try { const s = sessionStorage.getItem('toc_s'); if (!s) return false; return Date.now() < JSON.parse(s).exp; }
+  catch(e) { return false; }
+}
+function makeSession() { sessionStorage.setItem('toc_s', JSON.stringify({exp: Date.now()+SESSION_TTL})); }
+
+function showApp() {
+  document.getElementById('pwGate').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  loadAndRender();
+}
+
+// ── Auth ─────────────────────────────────────────
+async function attemptLogin() {
+  const btn=document.getElementById('pwBtn'), input=document.getElementById('pwInput'), err=document.getElementById('pwError');
+  const pw=input.value.trim(); if (!pw) { input.focus(); return; }
+  btn.disabled=true; btn.textContent='Checking…'; err.classList.remove('visible'); input.classList.remove('error');
+  try {
+    const {data,error} = await db.rpc('verify_app_password',{input_password:pw});
+    if (error) throw error;
+    if (data===true) { makeSession(); showApp(); }
+    else { input.classList.add('error'); err.classList.add('visible'); input.value=''; input.focus(); }
+  } catch(e) {
+    err.textContent='Error: '+(e.message||'Could not connect'); err.classList.add('visible');
+  } finally { btn.disabled=false; btn.textContent='Enter'; }
+}
+document.getElementById('pwBtn').addEventListener('click', attemptLogin);
+document.getElementById('pwInput').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+if (hasSession()) showApp();
+
+// ── Data ──────────────────────────────────────────
+let lists = { feedNames:[], sources:[], destinations:[] };
+let saveTimer = null;
+
+async function loadAndRender() {
+  try {
+    const {data,error} = await db.from('toc_lists').select('key,items');
+    if (error) throw error;
+    if (data) data.forEach(r => { if (lists[r.key] !== undefined) lists[r.key] = r.items||[]; });
+  } catch(e) { console.warn('Load error:', e); }
+  buildGrid();
+}
+
+async function saveLists() {
+  const ind = document.getElementById('saveIndicator');
+  ind.textContent='Saving…'; ind.className='save-indicator saving';
+  try {
+    const upserts = ['feedNames','sources','destinations'].map(k=>({key:k, items:lists[k], updated_at:new Date().toISOString()}));
+    const {error} = await db.from('toc_lists').upsert(upserts);
+    if (error) throw error;
+    ind.textContent='Saved ✓'; ind.className='save-indicator saved';
+    setTimeout(()=>{ ind.textContent=''; ind.className='save-indicator'; }, 2000);
+  } catch(e) {
+    ind.textContent='Save failed'; ind.className='save-indicator'; console.warn(e);
+  }
+}
+
+function schedSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveLists, 800);
+}
+
+function collectLists() {
+  const fn=[], src=[], dst=[];
+  document.querySelectorAll('#xlBody tr').forEach(tr=>{
+    const c=tr.querySelectorAll('.xl-cell');
+    const v0=c[0]?.value.trim().toUpperCase(); if(v0) fn.push(v0);
+    const v1=c[1]?.value.trim().toUpperCase(); if(v1) src.push(v1);
+    const v2=c[2]?.value.trim().toUpperCase(); if(v2) dst.push(v2);
+  });
+  lists.feedNames=[...new Set(fn)];
+  lists.sources=[...new Set(src)];
+  lists.destinations=[...new Set(dst)];
+}
+
+// ── Grid ──────────────────────────────────────────
+function renumber() {
+  document.querySelectorAll('#xlBody tr').forEach((r,i)=>{ r.querySelector('.row-num').textContent=i+1; });
+}
+
+function addRow(fn='',src='',dst='',focus=true) {
+  const tbody=document.getElementById('xlBody');
+  const n=tbody.querySelectorAll('tr').length+1;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="row-num">${n}</td><td><input class="xl-cell" value="${fn}" placeholder="Feed name…"></td><td><input class="xl-cell" value="${src}" placeholder="Source…"></td><td><input class="xl-cell" value="${dst}" placeholder="Destination…"></td><td><button class="xl-del" title="Remove row">✕</button></td>`;
+
+  tr.querySelector('.xl-del').addEventListener('click',()=>{
+    tr.remove(); renumber();
+    collectLists(); schedSave();
+  });
+
+  const cells=tr.querySelectorAll('.xl-cell');
+  cells.forEach((cell,idx)=>{
+    cell.addEventListener('input',()=>{ collectLists(); schedSave(); });
+    cell.addEventListener('keydown',e=>{
+      if (e.key==='Enter') { e.preventDefault(); addRow('','','',true); }
+      if (e.key==='Tab'&&!e.shiftKey&&idx===cells.length-1) {
+        const allRows=document.querySelectorAll('#xlBody tr');
+        if (tr===allRows[allRows.length-1]) { e.preventDefault(); addRow('','','',true); }
+      }
+    });
+  });
+
+  tbody.appendChild(tr);
+  if (focus) cells[0].focus();
+  return tr;
+}
+
+function buildGrid() {
+  const tbody=document.getElementById('xlBody');
+  tbody.innerHTML='';
+  const max=Math.max(lists.feedNames.length, lists.sources.length, lists.destinations.length, 1);
+  for (let i=0;i<max;i++) {
+    addRow(lists.feedNames[i]||'', lists.sources[i]||'', lists.destinations[i]||'', false);
+  }
+}
+
+// ── Controls ──────────────────────────────────────
+document.getElementById('addRowBtn').addEventListener('click',()=>addRow('','','',true));
+
+document.getElementById('clearEmptyBtn').addEventListener('click',()=>{
+  document.querySelectorAll('#xlBody tr').forEach(tr=>{
+    const cells=tr.querySelectorAll('.xl-cell');
+    const allEmpty=[...cells].every(c=>!c.value.trim());
+    if (allEmpty) tr.remove();
+  });
+  renumber(); collectLists(); schedSave();
+});
+
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  collectLists();
+  const max=Math.max(lists.feedNames.length,lists.sources.length,lists.destinations.length);
+  let csv='Feed Name,Source,Destination\n';
+  for(let i=0;i<max;i++) csv+=`"${lists.feedNames[i]||''}","${lists.sources[i]||''}","${lists.destinations[i]||''}"\n`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='toc-lists.csv'; a.click();
+});
+
+document.getElementById('importFile').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.split(/[\r\n]+/).filter(l=>l.trim());
+    const start=lines[0].toLowerCase().includes('feed')?1:0;
+    lists.feedNames=[]; lists.sources=[]; lists.destinations=[];
+    lines.slice(start).forEach(line=>{
+      const parts=line.split(',').map(p=>p.replace(/^"|"$/g,'').trim().toUpperCase());
+      if(parts[0]) lists.feedNames.push(parts[0]);
+      if(parts[1]) lists.sources.push(parts[1]);
+      if(parts[2]) lists.destinations.push(parts[2]);
+    });
+    lists.feedNames=[...new Set(lists.feedNames)];
+    lists.sources=[...new Set(lists.sources)];
+    lists.destinations=[...new Set(lists.destinations)];
+    buildGrid(); saveLists();
+  };
+  reader.readAsText(file); e.target.value='';
+});
+</script>
+</body>
+</html>
