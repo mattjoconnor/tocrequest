@@ -1473,9 +1473,16 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
 ══════════════════════════════════════════════════ */
 const SUPA_URL = 'https://fcjidrzcimzhauwdccup.supabase.co';
 const SUPA_KEY = 'sb_publishable_sjrXMt_YICKzTXwwPLZalA_0DqjvvtB';
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
 const SESSION_TTL = 8 * 60 * 60 * 1000;
+
+// Safe Supabase init — won't crash if CDN is slow
+let db = null;
+try {
+  const { createClient } = supabase;
+  db = createClient(SUPA_URL, SUPA_KEY);
+} catch(e) {
+  console.error('Supabase init failed:', e);
+}
 
 function hasValidSession() {
   try { const s = sessionStorage.getItem('toc_s'); if (!s) return false; return Date.now() < JSON.parse(s).exp; } catch(e) { return false; }
@@ -1488,23 +1495,53 @@ function showApp() {
 }
 
 async function attemptLogin() {
-  const btn=document.getElementById('pwBtn'), input=document.getElementById('pwInput'), err=document.getElementById('pwError');
-  const pw=input.value.trim(); if (!pw) { input.focus(); return; }
-  btn.disabled=true; btn.textContent='Checking…'; err.classList.remove('visible'); input.classList.remove('error');
+  const btn   = document.getElementById('pwBtn');
+  const input = document.getElementById('pwInput');
+  const err   = document.getElementById('pwError');
+  const pw    = input.value.trim();
+  if (!pw) { input.focus(); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  err.classList.remove('visible');
+  input.classList.remove('error');
+
+  if (!db) {
+    err.textContent = 'Database not connected. Please refresh.';
+    err.classList.add('visible');
+    btn.disabled = false; btn.textContent = 'Enter';
+    return;
+  }
+
   try {
-    const {data,error} = await db.rpc('verify_app_password',{input_password:pw});
+    const { data, error } = await db.rpc('verify_app_password', { input_password: pw });
     if (error) throw error;
-    if (data===true) { createSession(); showApp(); }
-    else { input.classList.add('error'); err.classList.add('visible'); input.value=''; input.focus(); }
+    if (data === true) {
+      createSession();
+      showApp();
+    } else {
+      input.classList.add('error');
+      err.textContent = 'Incorrect password — try again';
+      err.classList.add('visible');
+      input.value = '';
+      input.focus();
+    }
   } catch(e) {
-    err.textContent='Connection error — try again'; err.classList.add('visible');
-    console.error(e);
-  } finally { btn.disabled=false; btn.textContent='Enter'; }
+    console.error('Login error:', e);
+    err.textContent = 'Error: ' + (e.message || 'Could not connect');
+    err.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enter';
+  }
 }
 
+// Wire up gate controls immediately (safe even if db isn't ready)
 document.getElementById('pwBtn').addEventListener('click', attemptLogin);
-document.getElementById('pwInput').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
-if (hasValidSession()) showApp();
+document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+
+// Skip gate if valid session exists
+if (hasValidSession()) { showApp(); }
 
 /* ── Supabase Data Layer ──────────────────────── */
 async function loadListsFromDB() {
