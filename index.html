@@ -1651,6 +1651,13 @@ function createSession() { sessionStorage.setItem('toc_s', JSON.stringify({exp: 
 function showApp() {
   document.getElementById('pwGate').classList.add('hidden');
   initApp();
+  // Always pull fresh data immediately after showing the app
+  setTimeout(() => {
+    loadListsFromDB().then(() => {
+      ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
+      syncDropdownExclusions();
+    });
+  }, 500);
 }
 
 async function attemptLogin() {
@@ -1704,20 +1711,23 @@ if (hasValidSession()) { showApp(); }
 
 /* ── Supabase Data Layer ──────────────────────── */
 async function loadListsFromDB() {
+  if (!db) return;
   try {
     const {data,error} = await db.from('toc_lists').select('key,items');
     if (error) throw error;
     if (data && data.length) {
       data.forEach(row => {
-        if (CONFIG[row.key]!==undefined && Array.isArray(row.items) && row.items.length>0)
+        // Always update — even empty arrays (admin may have cleared a list)
+        if (row.key in CONFIG && Array.isArray(row.items))
           CONFIG[row.key] = row.items;
         if (row.key==='sourceTags' && Array.isArray(row.items))
-          CONFIG.sourceTags = row.items; // [{source,tag}]
+          CONFIG.sourceTags = row.items;
         if (row.key==='pairs' && Array.isArray(row.items))
-          CONFIG.pairs = row.items; // [{source,destination}]
+          CONFIG.pairs = row.items;
       });
-    } else { await saveListsToDB(); }
-  } catch(e) { console.warn('Lists fallback:',e.message); }
+    }
+    // Never write back — don't overwrite admin changes with stale local data
+  } catch(e) { console.warn('Lists load failed:',e.message); }
 }
 async function saveListsToDB() {
   try {
@@ -1928,18 +1938,19 @@ document.getElementById('histClose').addEventListener('click',()=>document.getEl
 document.getElementById('histModal').addEventListener('click',e=>{ if(e.target===document.getElementById('histModal')) document.getElementById('histModal').classList.remove('is-open'); });
 
 
-// Force fresh data whenever user returns to the tab
+// Force fresh data whenever user returns to the tab or every 60s
 function refreshData() {
-  if (typeof loadListsFromDB === 'function' && typeof rebuildSelectForKey === 'function') {
-    loadListsFromDB().then(() => {
-      ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
-    });
-  }
+  if (!db) return;
+  loadListsFromDB().then(() => {
+    ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
+    syncDropdownExclusions();
+  }).catch(()=>{});
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshData();
 });
 window.addEventListener('focus', refreshData);
+setInterval(refreshData, 60000); // backstop: refresh every 60 seconds
 
 </script>
 </body>
