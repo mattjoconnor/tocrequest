@@ -692,16 +692,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   </div>
   <div class="entry-actions">
     <button class="btn btn-ink" id="addFeedBtn">+ Add Feed</button>
-    <button class="btn btn-next" id="addNextBtn" title="Adds this feed then auto-increments the trailing number in Feed Name and Source Name">
+    <button class="btn btn-next" id="addNextBtn" style="margin-left:auto;" title="Adds this feed then auto-increments the trailing number in Feed Name and Source Name">
       Add + Next →
       <span class="btn-next-sub">increments trailing number</span>
     </button>
-    <div class="entry-actions-sep"></div>
-    <label class="keep-toggle" title="Fields stay populated after adding so you can quickly adjust and add the next feed">
-      <input type="checkbox" id="keepFields">
-      <span class="keep-toggle-track"><span class="keep-toggle-thumb"></span></span>
-      <span class="keep-toggle-label">Keep Fields</span>
-    </label>
+
   </div>
 </div>
 
@@ -1278,20 +1273,9 @@ document.getElementById('addFeedBtn').addEventListener('click',()=>{
   } else {
     feeds.push(entry);
     showStatus('Feed '+feeds.length+' added.');
-    const keepFields = document.getElementById('keepFields').checked;
-    const savedSource = entry.source;
-    const savedFormat = entry.format;
     editingIndex = null;
-    if (!keepFields) clearEntryForm();
+    clearEntryForm();
     renderQueue();
-    if (keepFields) {
-      if (savedSource) csSet('source', savedSource);
-      // Restore format button
-      if (savedFormat) {
-        document.querySelectorAll('.format-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===savedFormat));
-        selectedFormat = savedFormat;
-      }
-    }
   }
 });
 
@@ -1630,7 +1614,7 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
   const printHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TOC-REQUEST-${show.replace(/[^a-zA-Z0-9]/g,'-').replace(/-+/g,'-')}-${document.getElementById('startDate').value||'nodate'}</title><style>${printCSS}</style></head><body>
 <div class="hdr"><div><div class="sup">TOC Request</div><div class="title">${show}</div></div><div class="meta"><span class="meta-lbl">Printed</span>${printed}</div></div>
 <div class="dates"><div class="dblk"><div class="dlbl">Start Date &amp; Time</div><div class="dval">${startDT}</div></div><div class="dblk"><div class="dlbl">End Date &amp; Time</div><div class="dval">${endDT}</div></div></div>
-<table><colgroup><col><col><col><col><col><col></colgroup><thead><tr><th>Feed Name</th><th>Source Name</th><th>Source</th><th>Destination</th><th>Format</th><th>Audio</th></tr></thead><tbody>${rows}</tbody></table>
+<table><colgroup><col style="width:26%"><col style="width:14%"><col style="width:18%"><col style="width:18%"><col style="width:12%"><col style="width:12%"></colgroup><thead><tr><th>Feed Name</th><th>Source Name</th><th>Source</th><th>Destination</th><th>Format</th><th>Audio</th></tr></thead><tbody>${rows}</tbody></table>
 </body></html>`;
   // Save to history
   await saveRequestToDB({
@@ -1641,6 +1625,11 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
     endTime: getTimeStr('end'),
     feeds: JSON.parse(JSON.stringify(feeds))
   });
+  // Set parent window title so Chrome uses it as PDF filename
+  const _origTitle = document.title;
+  const safeShow = show.replace(/[^a-zA-Z0-9]/g,'-').replace(/-+/g,'-');
+  const safeDate = (document.getElementById('startDate').value||'').replace(/\//g,'-');
+  document.title = 'TOC-REQUEST-' + safeShow + (safeDate?'-'+safeDate:'');
   const frame=document.getElementById('printFrame');
   frame.onload=function(){try{frame.contentWindow.focus();frame.contentWindow.print();}catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([printHTML],{type:'text/html'}));a.target='_blank';a.click();}};
   frame.src=URL.createObjectURL(new Blob([printHTML],{type:'text/html'}));
