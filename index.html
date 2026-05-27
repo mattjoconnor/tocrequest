@@ -730,7 +730,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 <div class="modal-backdrop" id="templatesModal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Presets</span>
+      <span class="modal-title">Templates</span>
       <button class="modal-close" id="presetsClose">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -1316,7 +1316,7 @@ async function renderPresetList() {
 
   function makeItem(p, isArchived) {
     const savedAt   = p.data?.savedAt   || '';
-    const feedCount = p.data?.feedCount ?? 0;
+    const feedCount = p.data?.feedCount ?? p.data?.data?.feedCount ?? p.feedCount ?? 0;
     const item = document.createElement('div');
     item.className = 'preset-item' + (isArchived ? ' preset-archived' : '');
     item.innerHTML = `
@@ -1592,8 +1592,8 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
 .del-confirm-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;border-top:1px dashed var(--border);flex-wrap:wrap;}
 .del-confirm-input{font-family:inherit;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);border-radius:5px;padding:.25em .6em;outline:none;width:100px;transition:border-color .15s;}
 .del-confirm-input:focus{border-color:var(--ink);}
-.arch-section-lbl{padding:.5rem 0;}
-.arch-toggle{font-family:inherit;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);background:none;border:none;cursor:pointer;padding:.2rem 0;}
+.arch-section-lbl{padding:.25rem 0;margin-top:.25rem;border-top:1px solid var(--border);}
+.arch-toggle{font-family:inherit;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);background:none;border:none;cursor:pointer;padding:.4rem .75rem;border-radius:6px;outline:none;display:flex;align-items:center;gap:.4em;}
 .arch-toggle:hover{color:var(--ink);}</style></head><body>
 <div class="hdr"><div class="title">${show}</div></div>
 <div class="dates"><div class="dblk"><div class="dlbl">Start Date &amp; Time</div><div class="dval">${startDT}</div></div><div class="dblk"><div class="dlbl">End Date &amp; Time</div><div class="dval">${endDT}</div></div></div>
