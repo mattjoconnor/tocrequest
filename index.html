@@ -539,68 +539,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   .edit-banner { padding: var(--s2) var(--s4); gap: var(--s2); flex-wrap: wrap; }
   .edit-banner-sub { display: none; }
 
-  /* ── Feed Queue — card layout on mobile (no scroll) ── */
+  /* ── Feed Queue — hide table, show cards on mobile ── */
   #queueCard { overflow: visible; }
-  .feed-table-wrap { overflow-x: visible; }
-  .feed-table { min-width: 0; }
-
-  .feed-table thead { display: none; }
-
-  .feed-table tbody tr {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto auto;
-    gap: 0;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    margin: var(--s2) var(--s4);
-    padding: var(--s3) var(--s4);
-    background: var(--white);
-  }
-  .feed-table tbody tr.editing-row { border-color: var(--amber); background: var(--amber-bg); }
-  .feed-table tbody tr.just-added { animation: row-added .9s ease-out; }
-
-  /* Feed name — full width title */
-  .feed-table tbody td.td-num { display: none; }
-  .feed-table tbody td.td-feedname {
-    grid-column: 1; grid-row: 1;
-    font-size: var(--t-base); border: none; padding: 0 0 var(--s1) 0;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-
-  /* Source name + source + destination — detail line */
-  .feed-table tbody td.td-srcname,
-  .feed-table tbody td.td-src,
-  .feed-table tbody td.td-dst {
-    display: inline; border: none; padding: 0;
-    font-size: var(--t-xs); color: var(--ink-mid); font-weight: 500;
-    white-space: nowrap;
-  }
-  .feed-table tbody td.td-srcname { grid-column: 1; grid-row: 2; display: block; }
-  .feed-table tbody td.td-src::before { content: ' · '; color: var(--border-hover); }
-  .feed-table tbody td.td-dst::before { content: ' → '; color: var(--border-hover); }
-  .feed-table tbody td.td-src,
-  .feed-table tbody td.td-dst { grid-row: 2; display: contents; }
-
-  /* Format + audio — badge line */
-  .feed-table tbody td.td-fmt,
-  .feed-table tbody td.td-aud {
-    border: none; padding: var(--s1) 0 0 0;
-    font-size: var(--t-xs); font-weight: 700;
-    color: var(--ink-mid);
-  }
-  .feed-table tbody td.td-fmt { grid-column: 1; grid-row: 3; }
-  .feed-table tbody td.td-aud { grid-column: 1; grid-row: 3; padding-left: .75em; display: inline; }
-  .feed-table tbody td.td-aud::before { content: ' · '; color: var(--border-hover); }
-  .feed-table tbody td.td-fmt { display: flex; align-items: center; flex-wrap: wrap; gap: .2em; }
-
-  /* Actions — right column spanning all rows */
-  .feed-table tbody td.td-actions {
-    grid-column: 2; grid-row: 1 / 4;
-    border: none; padding: 0 0 0 var(--s3);
-    display: flex; flex-direction: column; justify-content: center; gap: var(--s1);
-    align-items: flex-end;
-  }
+  .feed-table-wrap { display: none; }
+  .mobile-queue { display: block; padding: var(--s2) var(--s4) var(--s3); }
 
   /* ── Bottom Bar ── */
   .bottom-bar { padding: var(--s3) var(--s4); gap: var(--s2); }
@@ -632,6 +574,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 
   .btn-admin span { display: none; }
 }
+
+/* ── Mobile feed cards (shown only on mobile) ───────────────── */
+.mobile-queue { display: none; }
+.feed-card {
+  display: flex; align-items: flex-start; gap: var(--s3);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  padding: var(--s3) var(--s4); margin-bottom: var(--s2);
+  background: var(--white); transition: border-color .15s;
+}
+.feed-card.editing { border-color: var(--amber); background: var(--amber-bg); }
+.feed-card-body { flex: 1; min-width: 0; }
+.feed-card-name { font-size: var(--t-sm); font-weight: 800; color: var(--ink); margin-bottom: .2em; }
+.feed-card-detail { font-size: var(--t-xs); color: var(--ink-mid); font-weight: 500; margin-bottom: .2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-card-meta { font-size: var(--t-xs); font-weight: 700; color: var(--ink-mid); }
+.feed-card-actions { display: flex; flex-direction: column; gap: var(--s1); flex-shrink: 0; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -766,6 +723,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
     <tbody id="feedTableBody"></tbody>
   </table>
 </div>
+<div class="mobile-queue" id="mobileQueue"></div>
 
 <div class="bottom-bar">
   <button class="btn btn-ghost" id="clearAllBtn">Clear All</button>
@@ -1231,6 +1189,36 @@ function renderQueue() {
   }
   tbody.querySelectorAll('.btn-row-edit').forEach(b=>b.addEventListener('click',()=>{ const idx=+b.dataset.i; if(editingIndex===idx){clearEntryForm();return;} startEdit(idx); }));
   tbody.querySelectorAll('.btn-row-del').forEach(b=>b.addEventListener('click',()=>{ const idx=+b.dataset.i; if(editingIndex===idx)clearEntryForm(); feeds.splice(idx,1); renderQueue(); showStatus('Feed removed.'); }));
+
+  // Mobile card list
+  const mq = document.getElementById('mobileQueue');
+  if (mq) {
+    mq.innerHTML = '';
+    feeds.forEach((f, i) => {
+      const card = document.createElement('div');
+      card.className = 'feed-card' + (editingIndex===i ? ' editing' : '');
+      const detail = [f.sourceName, f.source, f.destination].filter(Boolean).join(' · ');
+      const meta   = [f.format, f.audio].filter(Boolean).join(' · ');
+      card.innerHTML = `
+        <div class="feed-card-body">
+          <div class="feed-card-name">${f.feedName||'—'}</div>
+          ${detail ? `<div class="feed-card-detail">${detail}</div>` : ''}
+          ${meta   ? `<div class="feed-card-meta">${meta}</div>` : ''}
+        </div>
+        <div class="feed-card-actions">
+          <button class="btn-row btn-row-edit${editingIndex===i?' active':''}" data-i="${i}">Edit</button>
+          <button class="btn-row btn-row-del" data-i="${i}">&#10005;</button>
+        </div>`;
+      card.querySelector('.btn-row-edit').addEventListener('click', () => {
+        if (editingIndex!==null) clearEntryForm(); startEdit(i);
+      });
+      card.querySelector('.btn-row-del').addEventListener('click', () => {
+        if (editingIndex===i) clearEntryForm();
+        feeds.splice(i,1); renderQueue(); showStatus('Feed removed.');
+      });
+      mq.appendChild(card);
+    });
+  }
   syncDropdownExclusions();
   // Enable/disable Generate PDF based on queue content
   document.getElementById('printBtn').disabled = feeds.length === 0;
