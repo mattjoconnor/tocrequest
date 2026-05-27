@@ -601,7 +601,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   </div>
   <div class="header-right">
     <span class="feed-badge" id="feedBadge">0 feeds</span>
-    <button class="btn-admin" id="histBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> History</button>
+    
     <button class="btn-admin" id="templatesBtn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       Presets
@@ -1387,10 +1387,6 @@ async function renderPresetList() {
 }
 
 // Open/close presets modal
-document.getElementById('histBtn').addEventListener('click', () => {
-  renderHistory();
-  document.getElementById('histModal').classList.add('is-open');
-});
 document.getElementById('templatesBtn').addEventListener('click', () => {
   renderPresetList();
   document.getElementById('templatesModal').classList.add('is-open');
@@ -1594,7 +1590,27 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
 .del-confirm-input:focus{border-color:var(--ink);}
 .arch-section-lbl{padding:.25rem 0;margin-top:.25rem;border-top:1px solid var(--border);}
 .arch-toggle{font-family:inherit;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);background:none;border:none;cursor:pointer;padding:.4rem .75rem;border-radius:6px;outline:none;display:flex;align-items:center;gap:.4em;}
-.arch-toggle:hover{color:var(--ink);}</style></head><body>
+.arch-toggle:hover{color:var(--ink);}
+/* ── Archive / CONFIRM delete ─────────────────── */
+.preset-archived { opacity:.6; }
+.arch-badge { font-size:.6rem; font-weight:700; background:var(--surface-2); color:var(--ink-mid); border-radius:3px; padding:.1em .4em; margin-left:.4em; vertical-align:middle; text-transform:uppercase; letter-spacing:.04em; }
+.del-confirm-row { display:flex; align-items:center; gap:.5rem; padding:.5rem .875rem; border-top:1px dashed var(--border); flex-wrap:wrap; }
+.del-confirm-input { font-family:inherit; font-size:.8rem; font-weight:600; border:1.5px solid var(--border); border-radius:5px; padding:.25em .6em; outline:none; width:100px; transition:border-color .15s; }
+.del-confirm-input:focus { border-color:var(--ink); }
+.arch-section-lbl { margin-top:.5rem; border-top:1px solid var(--border); padding-top:.25rem; }
+.arch-toggle { font-family:inherit; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-mid); background:var(--surface); border:1.5px solid var(--border); border-radius:6px; cursor:pointer; padding:.35em .8em; outline:none; display:flex; align-items:center; gap:.4em; transition:all .12s; margin:.25rem 0; }
+.arch-toggle:hover { color:var(--ink); border-color:var(--border-hover); background:var(--surface-2); }
+
+/* ── Archive / CONFIRM delete ─────────────────── */
+.preset-archived{opacity:.6;}
+.arch-badge{font-size:.6rem;font-weight:700;background:var(--surface-2);color:var(--ink-mid);border-radius:3px;padding:.1em .4em;margin-left:.4em;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em;}
+.del-confirm-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;border-top:1px dashed var(--border);flex-wrap:wrap;}
+.del-confirm-input{font-family:inherit;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);border-radius:5px;padding:.25em .6em;outline:none;width:100px;transition:border-color .15s;}
+.del-confirm-input:focus{border-color:var(--ink);}
+.arch-section-lbl{margin-top:.5rem;border-top:1px solid var(--border);padding-top:.25rem;}
+.arch-toggle{font-family:inherit;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mid);background:var(--surface);border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:.35em .8em;outline:none;display:flex;align-items:center;gap:.4em;transition:all .12s;margin:.25rem 0;}
+.arch-toggle:hover{color:var(--ink);border-color:var(--border-hover);background:var(--surface-2);}
+</style></head><body>
 <div class="hdr"><div class="title">${show}</div></div>
 <div class="dates"><div class="dblk"><div class="dlbl">Start Date &amp; Time</div><div class="dval">${startDT}</div></div><div class="dblk"><div class="dlbl">End Date &amp; Time</div><div class="dval">${endDT}</div></div></div>
 <table><colgroup><col style="width:26%"><col style="width:14%"><col style="width:18%"><col style="width:18%"><col style="width:12%"><col style="width:12%"></colgroup><thead><tr><th>Feed Name</th><th>Source Name</th><th>Source</th><th>Destination</th><th>Format</th><th>Audio</th></tr></thead><tbody>${rows}</tbody></table>
@@ -1926,7 +1942,6 @@ async function renderHistory() {
   });
   body.appendChild(list);
 }
-document.getElementById('histBtn').addEventListener('click',()=>{ renderHistory(); document.getElementById('histModal').classList.add('is-open'); });
 document.getElementById('histClose').addEventListener('click',()=>document.getElementById('histModal').classList.remove('is-open'));
 document.getElementById('histModal').addEventListener('click',e=>{ if(e.target===document.getElementById('histModal')) document.getElementById('histModal').classList.remove('is-open'); });
 
