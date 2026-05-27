@@ -1595,7 +1595,19 @@ async function deleteRequestFromDB(id) {
 }
 
 /* ── App Init ────────────────────────────────── */
+let _appInited = false;
 async function initApp() {
+  if (_appInited) return;
+  _appInited = true;
+
+  // Clear any existing CustomSelect DOM before reinitializing
+  document.querySelectorAll('.cs-wrap:not(.compact)').forEach(w => {
+    w.querySelectorAll('.cs-trigger, .cs-panel').forEach(el => el.remove());
+  });
+  document.querySelectorAll('.cs-wrap.compact').forEach(w => {
+    w.querySelectorAll('.cs-trigger, .cs-panel').forEach(el => el.remove());
+  });
+
   await loadListsFromDB();
   initSelect('wrap-feedName','feedNames','— Select feed —',true);
   initSelect('wrap-source','sources','— Select source —',true);
