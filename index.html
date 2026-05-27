@@ -481,6 +481,99 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 .pw-btn:hover { opacity:.82; } .pw-btn:disabled { opacity:.45; cursor:not-allowed; }
 .pw-error { font-size:var(--t-xs); color:var(--red); font-weight:600; opacity:0; transition:opacity .2s; }
 .pw-error.visible { opacity:1; }
+
+/* ══════════════════════════════════════════════
+   MOBILE RESPONSIVE  — breakpoint 768px
+══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Header ── */
+  .page-header { padding: var(--s3) var(--s4); gap: var(--s2); flex-wrap: wrap; }
+  .page-title  { font-size: clamp(1.1rem, 5vw, 1.5rem); }
+  .header-right { gap: var(--s2); }
+  .btn-admin { padding: .45em .7em; font-size: .62rem; gap: .3em; }
+  .btn-admin svg { width: 12px; height: 12px; }
+  .feed-badge { display: none; }
+  .logo-badge { font-size: .9rem; padding: .18em .42em; }
+
+  /* ── Cards ── */
+  .card { border-radius: 10px; }
+  .card-header { padding: var(--s3) var(--s4); }
+
+  /* ── Show Information ── */
+  .show-name-row { display: flex; flex-direction: column; }
+  .show-name-label { border-right: none; border-bottom: 1.5px solid var(--border); padding: var(--s2) var(--s4); }
+  .show-name-input { padding: var(--s3) var(--s4); font-size: var(--t-base); }
+
+  .date-time-grid { grid-template-columns: 1fr; }
+  .date-time-col { border-right: none; border-bottom: 1.5px solid var(--border); }
+  .date-time-col:last-child { border-bottom: none; }
+
+  /* ── Entry Grid — collapse to 2 cols ── */
+  .entry-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Feed Name — full width on mobile */
+  .entry-grid > .entry-field:nth-child(1) { grid-column: 1 / -1; border-right: none; }
+
+  /* Source + Destination side by side */
+  .entry-grid > .entry-field:nth-child(2) { border-right: 1.5px solid var(--border); }
+  .entry-grid > .entry-field:nth-child(3) { border-right: none; }
+
+  /* Audio — full width */
+  .entry-grid > .entry-field:nth-child(4) { grid-column: 1 / -1; border-right: none; }
+
+  /* Video Format + Source Name — already span 2 each */
+  .entry-field[style*="span 2"] { grid-column: 1 / -1 !important; }
+
+  .entry-field { padding: var(--s3) var(--s4); }
+  .field-label  { font-size: .6rem; }
+
+  /* ── Entry Actions ── */
+  .entry-actions { padding: var(--s3) var(--s4); gap: var(--s2); }
+  .btn-next { padding: .5em .8em; font-size: .65rem; }
+  .btn-next-sub { display: none; }
+  .keep-toggle-label { display: none; }
+
+  /* ── Edit Banner ── */
+  .edit-banner { padding: var(--s2) var(--s4); gap: var(--s2); flex-wrap: wrap; }
+  .edit-banner-sub { display: none; }
+
+  /* ── Feed Queue Table — horizontal scroll ── */
+  .feed-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .feed-table { min-width: 620px; }
+  .feed-table th,
+  .feed-table tbody td { font-size: .75rem; padding: var(--s2) var(--s3); }
+
+  /* ── Bottom Bar ── */
+  .bottom-bar { padding: var(--s3) var(--s4); gap: var(--s2); }
+  .bottom-bar .btn { font-size: .7rem; padding: 0 .9rem; }
+
+  /* ── Modals — full screen on mobile ── */
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .xl-modal { max-width: 100%; }
+
+  /* ── Password Gate ── */
+  .pw-card { padding: 2rem 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .page-header { padding: var(--s3); }
+  .main-content { padding: var(--s3); gap: var(--s3); }
+
+  /* Stack Source + Destination too */
+  .entry-grid > .entry-field:nth-child(2),
+  .entry-grid > .entry-field:nth-child(3) { grid-column: 1 / -1; border-right: none; }
+
+  /* Larger touch targets for audio buttons */
+  .audio-btn, .format-btn { font-size: .75rem; }
+
+  .btn-admin span { display: none; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -606,7 +699,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
     <div class="queue-empty-title">No feeds in queue</div>
     <div class="queue-empty-hint">Fill in the form above and click Add Feed to get started.</div>
   </div>
-  <table class="feed-table" id="feedTable" style="display:none;">
+  <div class="feed-table-wrap"><table class="feed-table" id="feedTable" style="display:none;">
     <thead><tr>
       <th style="text-align:center;">#</th>
       <th>Feed Name</th><th>Source Name</th><th>Source</th><th>Destination</th><th>Format</th><th>Audio</th>
@@ -1213,6 +1306,15 @@ document.getElementById('presetsModal').addEventListener('click', e => { if (e.t
 document.getElementById('savePresetBtn').addEventListener('click', async () => {
   const name = document.getElementById('presetNameInput').value.trim();
   if (!name) { document.getElementById('presetNameInput').focus(); return; }
+
+  // Check if a preset with this name already exists — offer to update
+  const existing = await loadPresetsFromDB();
+  const match = existing.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (match) {
+    if (!confirm(`A preset named "${match.name}" already exists. Update it?`)) return;
+    await deletePresetFromDB(match.id);
+  }
+
   const preset = {
     name,
     savedAt: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
