@@ -80,11 +80,11 @@ body { font-family:'Red Hat Display',sans-serif; background:var(--surface-2); co
 .dst-input:focus{background:#fffde7;}
 .sd-source-cell:hover .item-del,.sd-dest-cell:hover .item-del{opacity:1;}
 
-/* Tag badge */
-.tag-btn{display:inline-flex;align-items:center;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);border-radius:4px;font-size:.6rem;font-weight:800;letter-spacing:.04em;padding:.1em .45em;cursor:pointer;white-space:nowrap;transition:all .12s;flex-shrink:0;font-family:inherit;outline:none;max-width:60px;overflow:hidden;text-overflow:ellipsis;margin-right:.25rem;}
-.tag-btn:hover{background:var(--blue);color:var(--white);}
-.tag-btn.empty{background:transparent;color:var(--border-hover);border-color:var(--border);font-weight:600;}
-.tag-btn.empty:hover{border-color:var(--blue);color:var(--blue);}
+/* Tag toggle */
+.tag-toggle{display:flex;gap:2px;margin-right:.3rem;flex-shrink:0;}
+.tag-opt{font-family:inherit;font-size:.6rem;font-weight:800;letter-spacing:.04em;padding:.15em .45em;border-radius:4px;border:1.5px solid var(--border);background:transparent;color:var(--ink-light);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.tag-opt:hover{border-color:var(--border-hover);color:var(--ink);}
+.tag-opt.active{background:var(--blue);border-color:var(--blue);color:var(--white);}
 
 /* Link button */
 .link-btn{display:flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:50%;background:none;border:1.5px solid var(--border);cursor:pointer;color:var(--ink-light);font-size:.8rem;flex-shrink:0;font-family:inherit;transition:all .15s;line-height:1;}
@@ -197,12 +197,7 @@ body { font-family:'Red Hat Display',sans-serif; background:var(--surface-2); co
   </div>
 </div>
 
-<div class="tag-popover" id="tagPopover">
-  <div class="tag-popover-title">Source Tag (for feed filtering)</div>
-  <input class="tag-input-pop" id="tagPopInput" placeholder="e.g. NORTHBOUND" autocomplete="off">
-  <div class="tag-suggestions" id="tagPopSugs"></div>
-  <button class="tag-clear" id="tagPopClear">✕ Remove tag</button>
-</div>
+
 
 <script>
 const SUPA_URL='https://fcjidrzcimzhauwdccup.supabase.co';
@@ -347,11 +342,15 @@ function renderSD(){
     srcCell.className='sd-source-cell';
     srcCell.innerHTML=`
       <input class="src-input" value="${esc(src)}" placeholder="${i===0?'Source…':''}" autocomplete="off">
-      <button class="tag-btn ${tag?'':'empty'}" data-src="${esc(src)}" title="Set filter tag">${tag||'+tag'}</button>
+      <div class="tag-toggle">
+        <button class="tag-opt ${!tag?'active':''}" data-val="" title="No tag">—</button>
+        <button class="tag-opt ${tag==='NORTHBOUND'?'active':''}" data-val="NORTHBOUND" title="NORTHBOUND feeds only">NB</button>
+        <button class="tag-opt ${tag==='SOUTHBOUND'?'active':''}" data-val="SOUTHBOUND" title="SOUTHBOUND feeds only">SB</button>
+      </div>
       <button class="item-del" title="Remove source">✕</button>`;
 
     const srcInp=srcCell.querySelector('.src-input');
-    const tagBtn=srcCell.querySelector('.tag-btn');
+    const tagBtns=srcCell.querySelectorAll('.tag-opt');
     const srcDel=srcCell.querySelector('.item-del');
 
     let srcDeb;
@@ -380,7 +379,13 @@ function renderSD(){
       renderSD();schedSave();
     });
 
-    tagBtn.addEventListener('click',e=>{e.stopPropagation();openTagPop(tagBtn,srcInp);});
+    tagBtns.forEach(btn=>btn.addEventListener('click',()=>{
+      const v=btn.dataset.val;
+      const s=srcInp.value.trim().toUpperCase()||src;
+      if(v) sourceTags[s]=v; else delete sourceTags[s];
+      tagBtns.forEach(b=>b.classList.toggle('active',b.dataset.val===v));
+      schedSave();
+    }));
 
     // Link cell
     const linkCell=document.createElement('div');
@@ -459,47 +464,6 @@ function addDest(){
   destinations.push(v);inp.value='';renderSD();schedSave();inp.focus();
 }
 
-// ── Tag popover ────────────────────────────────────────────────────────
-function openTagPop(btn, srcInp){
-  const pop=document.getElementById('tagPopover');
-  const inp=document.getElementById('tagPopInput');
-  const sugs=document.getElementById('tagPopSugs');
-  const src=srcInp.value.trim().toUpperCase()||btn.dataset.src;
-  inp.value=sourceTags[src]||'';
-
-  // Existing tags as suggestions
-  const existing=[...new Set(Object.values(sourceTags).filter(Boolean))];
-  sugs.innerHTML='';
-  existing.forEach(t=>{
-    const s=document.createElement('button');s.className='tag-sug';s.textContent=t;
-    s.addEventListener('click',()=>{inp.value=t;applyTag();});
-    sugs.appendChild(s);
-  });
-
-  const rect=btn.getBoundingClientRect();
-  pop.style.display='block';
-  pop.style.left=Math.min(rect.left,window.innerWidth-220)+'px';
-  pop.style.top=(rect.bottom+window.scrollY+4)+'px';
-  inp.focus();inp.select();
-
-  function applyTag(){
-    const v=inp.value.trim().toUpperCase();
-    const s=srcInp.value.trim().toUpperCase()||btn.dataset.src;
-    if(v)sourceTags[s]=v;else delete sourceTags[s];
-    btn.textContent=v||'+tag';
-    btn.className='tag-btn'+(v?'':' empty');
-    close();schedSave();
-  }
-  function close(){
-    pop.style.display='none';
-    document.removeEventListener('click',outside);
-    document.removeEventListener('keydown',keys);
-  }
-  function outside(e){if(!pop.contains(e.target)&&e.target!==btn)close();}
-  function keys(e){if(e.key==='Escape')close();if(e.key==='Enter'){e.preventDefault();applyTag();}}
-  setTimeout(()=>{document.addEventListener('click',outside);document.addEventListener('keydown',keys);},0);
-  document.getElementById('tagPopClear').onclick=()=>{inp.value='';applyTag();};
-}
 
 // ── Export / Import ────────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click',()=>{
