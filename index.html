@@ -539,12 +539,68 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   .edit-banner { padding: var(--s2) var(--s4); gap: var(--s2); flex-wrap: wrap; }
   .edit-banner-sub { display: none; }
 
-  /* ── Feed Queue Table — horizontal scroll ── */
+  /* ── Feed Queue — card layout on mobile (no scroll) ── */
   #queueCard { overflow: visible; }
-  .feed-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .feed-table { min-width: 620px; }
-  .feed-table th,
-  .feed-table tbody td { font-size: .75rem; padding: var(--s2) var(--s3); }
+  .feed-table-wrap { overflow-x: visible; }
+  .feed-table { min-width: 0; }
+
+  .feed-table thead { display: none; }
+
+  .feed-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    margin: var(--s2) var(--s4);
+    padding: var(--s3) var(--s4);
+    background: var(--white);
+  }
+  .feed-table tbody tr.editing-row { border-color: var(--amber); background: var(--amber-bg); }
+  .feed-table tbody tr.just-added { animation: row-added .9s ease-out; }
+
+  /* Feed name — full width title */
+  .feed-table tbody td.td-num { display: none; }
+  .feed-table tbody td.td-feedname {
+    grid-column: 1; grid-row: 1;
+    font-size: var(--t-base); border: none; padding: 0 0 var(--s1) 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Source name + source + destination — detail line */
+  .feed-table tbody td.td-srcname,
+  .feed-table tbody td.td-src,
+  .feed-table tbody td.td-dst {
+    display: inline; border: none; padding: 0;
+    font-size: var(--t-xs); color: var(--ink-mid); font-weight: 500;
+    white-space: nowrap;
+  }
+  .feed-table tbody td.td-srcname { grid-column: 1; grid-row: 2; display: block; }
+  .feed-table tbody td.td-src::before { content: ' · '; color: var(--border-hover); }
+  .feed-table tbody td.td-dst::before { content: ' → '; color: var(--border-hover); }
+  .feed-table tbody td.td-src,
+  .feed-table tbody td.td-dst { grid-row: 2; display: contents; }
+
+  /* Format + audio — badge line */
+  .feed-table tbody td.td-fmt,
+  .feed-table tbody td.td-aud {
+    border: none; padding: var(--s1) 0 0 0;
+    font-size: var(--t-xs); font-weight: 700;
+    color: var(--ink-mid);
+  }
+  .feed-table tbody td.td-fmt { grid-column: 1; grid-row: 3; }
+  .feed-table tbody td.td-aud { grid-column: 1; grid-row: 3; padding-left: .75em; display: inline; }
+  .feed-table tbody td.td-aud::before { content: ' · '; color: var(--border-hover); }
+  .feed-table tbody td.td-fmt { display: flex; align-items: center; flex-wrap: wrap; gap: .2em; }
+
+  /* Actions — right column spanning all rows */
+  .feed-table tbody td.td-actions {
+    grid-column: 2; grid-row: 1 / 4;
+    border: none; padding: 0 0 0 var(--s3);
+    display: flex; flex-direction: column; justify-content: center; gap: var(--s1);
+    align-items: flex-end;
+  }
 
   /* ── Bottom Bar ── */
   .bottom-bar { padding: var(--s3) var(--s4); gap: var(--s2); }
@@ -1164,7 +1220,7 @@ function renderQueue() {
   tbody.innerHTML='';
   feeds.forEach((f,i)=>{
     const tr=document.createElement('tr'); if(editingIndex===i)tr.classList.add('editing-row');
-    tr.innerHTML=`<td class="td-num">${i+1}</td><td><strong>${f.feedName||'&mdash;'}</strong></td><td style="color:var(--ink-mid)">${f.sourceName||'&mdash;'}</td><td>${f.source||'&mdash;'}</td><td>${f.destination||'&mdash;'}</td><td style="font-weight:600">${f.format||'&mdash;'}</td><td style="font-weight:600">${f.audio||'&mdash;'}</td><td class="td-actions"><button class="btn-row btn-row-edit${editingIndex===i?' active':''}" data-i="${i}">Edit</button><button class="btn-row btn-row-del" data-i="${i}">&#10005;</button></td>`;
+    tr.innerHTML=`<td class="td-num">${i+1}</td><td class="td-feedname"><strong>${f.feedName||'&mdash;'}</strong></td><td class="td-srcname" data-label="Source Name">${f.sourceName||'&mdash;'}</td><td class="td-src" data-label="Source">${f.source||'&mdash;'}</td><td class="td-dst" data-label="Destination">${f.destination||'&mdash;'}</td><td class="td-fmt" data-label="Format" style="font-weight:600">${f.format||'&mdash;'}</td><td class="td-aud" data-label="Audio" style="font-weight:600">${f.audio||'&mdash;'}</td><td class="td-actions"><button class="btn-row btn-row-edit${editingIndex===i?' active':''}" data-i="${i}">Edit</button><button class="btn-row btn-row-del" data-i="${i}">&#10005;</button></td>`;
     tbody.appendChild(tr);
   });
   // Flash the last row if it was just added (not editing)
