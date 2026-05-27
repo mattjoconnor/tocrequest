@@ -951,6 +951,8 @@ function loadConfig() {
 }
 function saveConfig() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(CONFIG)); } catch(e) {} }
 let CONFIG = loadConfig();
+if (!CONFIG.sourceTags) CONFIG.sourceTags = [];
+if (!CONFIG.pairs) CONFIG.pairs = [];
 
 const CHEVRON_SVG = `<svg class="cs-chevron" viewBox="0 0 11 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1l4.5 5 4.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -1134,6 +1136,7 @@ function syncDropdownExclusions() {
   // Only feed names and destinations are unique per row.
   // Sources are intentionally unrestricted (multicast: same source → multiple destinations).
   const usedFeedNames = new Set();
+  const usedSources   = new Set();
   const usedDests     = new Set();
 
   feeds.forEach((f, i) => {
@@ -1705,7 +1708,11 @@ async function loadListsFromDB() {
     if (data && data.length) {
       data.forEach(row => {
         if (CONFIG[row.key]!==undefined && Array.isArray(row.items) && row.items.length>0)
-          CONFIG[row.key]=row.items;
+          CONFIG[row.key] = row.items;
+        if (row.key==='sourceTags' && Array.isArray(row.items))
+          CONFIG.sourceTags = row.items; // [{source,tag}]
+        if (row.key==='pairs' && Array.isArray(row.items))
+          CONFIG.pairs = row.items; // [{source,destination}]
       });
     } else { await saveListsToDB(); }
   } catch(e) { console.warn('Lists fallback:',e.message); }
@@ -1747,6 +1754,40 @@ function initUI() {
   initSelect('wrap-source','sources','— Select source —',true);
   initSelect('wrap-destination','destinations','— Select dest —',true);
   csMap['feedName']=csMap['feedNames']; csMap['source']=csMap['sources']; csMap['destination']=csMap['destinations'];
+
+  // Auto-fill destination from pairs when source is selected
+  if (csMap['source']) {
+    const origSetValue = csMap['source'].setValue.bind(csMap['source']);
+    csMap['source'].setValue = function(v) {
+      origSetValue(v);
+      if (!v) return;
+      const pair = CONFIG.pairs.find(p => p.source === v.toUpperCase());
+      if (pair && !csGet('destination')) {
+        setTimeout(() => csSet('destination', pair.destination), 0);
+      }
+    };
+  }
+  // Also wire the native select change (for when user picks from dropdown)
+  const srcNative = document.getElementById('source');
+  if (srcNative) {
+    srcNative.addEventListener('change', () => {
+      const v = srcNative.value;
+      if (!v) return;
+      const pair = CONFIG.pairs.find(p => p.source === v.toUpperCase());
+      if (pair && !csGet('destination')) {
+        setTimeout(() => csSet('destination', pair.destination), 0);
+      }
+    });
+  }
+
+  // Re-filter sources when feed name changes
+  if (csMap['feedName']) {
+    const origFNSetValue = csMap['feedName'].setValue.bind(csMap['feedName']);
+    csMap['feedName'].setValue = function(v) {
+      origFNSetValue(v);
+      syncDropdownExclusions();
+    };
+  }
   document.querySelectorAll('.cs-wrap.compact').forEach(w=>{ const inst=new CustomSelect(w,{searchable:false}); csMap[w.querySelector('select').id]=inst; });
   document.querySelectorAll('.audio-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.audio-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedAudio=btn.dataset.val; }); });
   document.querySelectorAll('.format-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ document.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selectedFormat=btn.dataset.val; }); });
