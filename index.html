@@ -804,6 +804,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
+/* ── Gate wiring — must be FIRST so errors elsewhere don't block login ── */
+window.addEventListener('DOMContentLoaded', function() {
+  var btn   = document.getElementById('pwBtn');
+  var input = document.getElementById('pwInput');
+  if (btn)   btn.addEventListener('click',   function() { attemptLogin(); });
+  if (input) input.addEventListener('keydown', function(e) { if (e.key==='Enter') attemptLogin(); });
+});
+
+
 
 const DEFAULTS = {
   feedNames: [
