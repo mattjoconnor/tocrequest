@@ -846,16 +846,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
   </div>
 </div>
 
-<!-- History Modal -->
-<div class="modal-backdrop" id="histModal">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Request History</span>
-      <button class="modal-close" id="histClose">&#10005;</button>
-    </div>
-    <div class="modal-body" id="histBody"><div class="hist-empty">Loading…</div></div>
-  </div>
-</div>
+
 
 <!-- Excel List Manager Modal -->
 <div class="modal-backdrop" id="xlModal">
@@ -1041,7 +1032,7 @@ let activeTab='feedNames';
 document.getElementById('adminClose').addEventListener('click',()=>document.getElementById('adminModal').classList.remove('is-open'));
 document.getElementById('adminModal').addEventListener('click',e=>{ if(e.target===document.getElementById('adminModal'))document.getElementById('adminModal') && document.getElementById('adminModal').classList.remove('is-open');
     document.getElementById('xlModal').classList.remove('is-open');
-    document.getElementById('histModal').classList.remove('is-open'); });
+    });
 document.querySelectorAll('.modal-tab').forEach(tab=>{ tab.addEventListener('click',()=>{ document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); activeTab=tab.dataset.tab; document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none'); document.getElementById('tab-'+activeTab).style.display=''; renderAdminTab(activeTab); }); });
 
 function renderAdminTab(key) {
@@ -1252,6 +1243,25 @@ function startEdit(idx) {
   document.getElementById('addFeedBtn').className='btn btn-amber';
   renderQueue();
   document.getElementById('entryCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function collectEntry() {
+  const entry = {
+    feedName:    csGet('feedName'),
+    sourceName:  document.getElementById('sourceName').value.trim(),
+    source:      csGet('source'),
+    destination: csGet('destination'),
+    audio:       selectedAudio,
+    format:      selectedFormat
+  };
+  const missing = [];
+  if (!entry.feedName)    missing.push('Feed Name');
+  if (!entry.source)      missing.push('Source');
+  if (!entry.destination) missing.push('Destination');
+  if (!entry.sourceName)  missing.push('Source Name');
+  if (!entry.audio)       missing.push('Audio (channel count)');
+  if (!entry.format)      missing.push('Video Format');
+  return { entry, missing };
 }
 
 document.getElementById('addFeedBtn').addEventListener('click',()=>{
@@ -1507,7 +1517,6 @@ document.addEventListener('keydown', e => {
     dismissToast();
     document.getElementById('adminModal') && document.getElementById('adminModal').classList.remove('is-open');
     document.getElementById('xlModal').classList.remove('is-open');
-    document.getElementById('histModal').classList.remove('is-open');
     document.getElementById('templatesModal').classList.remove('is-open');
   }
 });
@@ -1615,8 +1624,8 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
 <div class="dates"><div class="dblk"><div class="dlbl">Start Date &amp; Time</div><div class="dval">${startDT}</div></div><div class="dblk"><div class="dlbl">End Date &amp; Time</div><div class="dval">${endDT}</div></div></div>
 <table><colgroup><col style="width:26%"><col style="width:14%"><col style="width:18%"><col style="width:18%"><col style="width:12%"><col style="width:12%"></colgroup><thead><tr><th>Feed Name</th><th>Source Name</th><th>Source</th><th>Destination</th><th>Format</th><th>Audio</th></tr></thead><tbody>${rows}</tbody></table>
 </body></html>`;
-  // Save to history
-  await saveRequestToDB({
+  // History removed — no save
+  if (false) await saveRequestToDB({
     showName: show,
     startDate: document.getElementById('startDate').value,
     startTime: getTimeStr('start'),
@@ -1910,55 +1919,6 @@ document.getElementById('xlImportFile').addEventListener('change',e=>{
   reader.readAsText(file); e.target.value='';
 });
 
-/* ── History ─────────────────────────────────── */
-async function renderHistory() {
-  const body=document.getElementById('histBody');
-  body.innerHTML='<div class="hist-empty">Loading…</div>';
-  const reqs=await loadRequestsFromDB();
-  if (!reqs.length) { body.innerHTML='<div class="hist-empty">No saved requests yet.</div>'; return; }
-  body.innerHTML='';
-  const list=document.createElement('div'); list.className='hist-list';
-  reqs.forEach(req=>{
-    const item=document.createElement('div'); item.className='hist-item';
-    const dt=new Date(req.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    item.innerHTML=`<div class="hist-info"><div class="hist-name">${req.show_name}</div><div class="hist-meta">${dt} &nbsp;&middot;&nbsp; ${(req.feeds||[]).length} feed${(req.feeds||[]).length!==1?'s':''}</div></div><button class="btn btn-ghost" style="padding:.4em .9em;font-size:var(--t-xs);" data-load>Load</button><button class="hist-del" data-del>✕</button>`;
-    item.querySelector('[data-load]').addEventListener('click',()=>{
-      if(feeds.length&&!confirm(`Load "${req.show_name}"?`))return;
-      document.getElementById('showName').value=req.show_name||'';
-      document.getElementById('startDate').value=req.start_date||'';
-      document.getElementById('endDate').value=req.end_date||'';
-      const st=req.start_time||''; const et=req.end_time||'';
-      if(st){ csSet('startHour',st.split(':')[0]); csSet('startMin',st.split(':')[1]?.split(' ')[0]||''); csSet('startAmPm',st.includes('PM')?'PM':'AM'); }
-      if(et){ csSet('endHour',et.split(':')[0]); csSet('endMin',et.split(':')[1]?.split(' ')[0]||''); csSet('endAmPm',et.includes('PM')?'PM':'AM'); }
-      feeds=JSON.parse(JSON.stringify(req.feeds||[])); clearEntryForm(); renderQueue();
-      document.getElementById('histModal').classList.remove('is-open');
-      showStatus(`"${req.show_name}" loaded.`);
-    });
-    item.querySelector('[data-del]').addEventListener('click',async()=>{
-      if(!confirm(`Delete "${req.show_name}"?`))return;
-      await deleteRequestFromDB(req.id); renderHistory();
-    });
-    list.appendChild(item);
-  });
-  body.appendChild(list);
-}
-document.getElementById('histClose').addEventListener('click',()=>document.getElementById('histModal').classList.remove('is-open'));
-document.getElementById('histModal').addEventListener('click',e=>{ if(e.target===document.getElementById('histModal')) document.getElementById('histModal').classList.remove('is-open'); });
-
-
-// Force fresh data whenever user returns to the tab or every 60s
-function refreshData() {
-  if (!db) return;
-  loadListsFromDB().then(() => {
-    ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
-    syncDropdownExclusions();
-  }).catch(()=>{});
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') refreshData();
-});
-window.addEventListener('focus', refreshData);
-setInterval(refreshData, 60000); // backstop: refresh every 60 seconds
 
 // ── Working File ──────────────────────────────────────────────────────
 const WF_KEY = 'toc_wf';
