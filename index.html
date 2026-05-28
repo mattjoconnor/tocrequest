@@ -849,44 +849,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; backgro
 
 
 <!-- Excel List Manager Modal -->
-<div class="modal-backdrop" id="xlModal">
-  <div class="modal xl-modal">
-    <div class="modal-header">
-      <span class="modal-title">Manage Lists</span>
-      <button class="modal-close" id="xlClose">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <div class="xl-grid-wrap">
-        <table class="xl-grid" id="xlGrid">
-          <thead><tr>
-            <th style="width:2rem">#</th>
-            <th>Feed Name</th>
-            <th>Source</th>
-            <th>Destination</th>
-            <th style="width:2.5rem"></th>
-          </tr></thead>
-          <tbody id="xlBody"></tbody>
-        </table>
-      </div>
-      <div class="xl-add-row">
-        <button class="btn btn-ink" id="xlAddRow">+ Add Row</button>
-        <span style="font-size:var(--t-xs);color:var(--ink-light);">Tab between cells &nbsp;&middot;&nbsp; Enter to add row</span>
-      </div>
-      <div class="xl-footer">
-        <button class="btn-csv" id="xlExportBtn">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export CSV
-        </button>
-        <label class="btn-csv" for="xlImportFile">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Import CSV
-          <input type="file" id="xlImportFile" accept=".csv,.txt" style="display:none;">
-        </label>
-        <button class="btn-csv" id="testDataBtn" style="opacity:.5;margin-left:auto;">&#8635; Load Test Data</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <iframe id="printFrame" style="display:none;"></iframe>
 
@@ -1031,8 +994,7 @@ let activeTab='feedNames';
 // adminBtn is now a link to admin.html — no click handler needed
 document.getElementById('adminClose').addEventListener('click',()=>document.getElementById('adminModal').classList.remove('is-open'));
 document.getElementById('adminModal').addEventListener('click',e=>{ if(e.target===document.getElementById('adminModal'))document.getElementById('adminModal') && document.getElementById('adminModal').classList.remove('is-open');
-    document.getElementById('xlModal').classList.remove('is-open');
-    });
+        });
 document.querySelectorAll('.modal-tab').forEach(tab=>{ tab.addEventListener('click',()=>{ document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); activeTab=tab.dataset.tab; document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none'); document.getElementById('tab-'+activeTab).style.display=''; renderAdminTab(activeTab); }); });
 
 function renderAdminTab(key) {
@@ -1539,8 +1501,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     dismissToast();
     document.getElementById('adminModal') && document.getElementById('adminModal').classList.remove('is-open');
-    document.getElementById('xlModal').classList.remove('is-open');
-    document.getElementById('templatesModal').classList.remove('is-open');
+        document.getElementById('templatesModal').classList.remove('is-open');
   }
 });
 
@@ -1615,32 +1576,18 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
 @keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes toast-out{from{opacity:1}to{opacity:0;transform:translateY(6px)}}
 /* ── Archive / CONFIRM ────────────────── */
-.preset-archived{opacity:.6;}
-.arch-badge{font-size:.6rem;font-weight:700;background:var(--surface-2);color:var(--ink-mid);border-radius:3px;padding:.1em .4em;margin-left:.4em;vertical-align:middle;}
-.del-confirm-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;border-top:1px dashed var(--border);flex-wrap:wrap;}
-.del-confirm-input{font-family:inherit;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);border-radius:5px;padding:.25em .6em;outline:none;width:100px;transition:border-color .15s;}
-.del-confirm-input:focus{border-color:var(--ink);}
-.arch-section-lbl{padding:.25rem 0;margin-top:.25rem;border-top:1px solid var(--border);}
-.arch-toggle{font-family:inherit;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);background:none;border:none;cursor:pointer;padding:.4rem .75rem;border-radius:6px;outline:none;display:flex;align-items:center;gap:.4em;}
-.arch-toggle:hover{color:var(--ink);}
 /* ── Archive / CONFIRM delete ─────────────────── */
-.preset-archived { opacity:.6; }
-.arch-badge { font-size:.6rem; font-weight:700; background:var(--surface-2); color:var(--ink-mid); border-radius:3px; padding:.1em .4em; margin-left:.4em; vertical-align:middle; text-transform:uppercase; letter-spacing:.04em; }
-.del-confirm-row { display:flex; align-items:center; gap:.5rem; padding:.5rem .875rem; border-top:1px dashed var(--border); flex-wrap:wrap; }
-.del-confirm-input { font-family:inherit; font-size:.8rem; font-weight:600; border:1.5px solid var(--border); border-radius:5px; padding:.25em .6em; outline:none; width:100px; transition:border-color .15s; }
-.del-confirm-input:focus { border-color:var(--ink); }
-.arch-section-lbl { margin-top:.5rem; border-top:1px solid var(--border); padding-top:.25rem; }
-.arch-toggle { font-family:inherit; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-mid); background:var(--surface); border:1.5px solid var(--border); border-radius:6px; cursor:pointer; padding:.35em .8em; outline:none; display:flex; align-items:center; gap:.4em; transition:all .12s; margin:.25rem 0; }
-.arch-toggle:hover { color:var(--ink); border-color:var(--border-hover); background:var(--surface-2); }
 
 /* ── Archive / CONFIRM delete ─────────────────── */
+
+/* ── Archive / CONFIRM delete ─────────────────────── */
 .preset-archived{opacity:.6;}
 .arch-badge{font-size:.6rem;font-weight:700;background:var(--surface-2);color:var(--ink-mid);border-radius:3px;padding:.1em .4em;margin-left:.4em;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em;}
 .del-confirm-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;border-top:1px dashed var(--border);flex-wrap:wrap;}
 .del-confirm-input{font-family:inherit;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);border-radius:5px;padding:.25em .6em;outline:none;width:100px;transition:border-color .15s;}
 .del-confirm-input:focus{border-color:var(--ink);}
 .arch-section-lbl{margin-top:.5rem;border-top:1px solid var(--border);padding-top:.25rem;}
-.arch-toggle{font-family:inherit;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mid);background:var(--surface);border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:.35em .8em;outline:none;display:flex;align-items:center;gap:.4em;transition:all .12s;margin:.25rem 0;}
+.arch-toggle{font-family:inherit;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mid);background:var(--surface);border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:.4em 1em;outline:none;display:inline-flex;align-items:center;gap:.4em;transition:all .12s;margin:.35rem 0;}
 .arch-toggle:hover{color:var(--ink);border-color:var(--border-hover);background:var(--surface-2);}
 </style></head><body>
 <div class="hdr"><div class="title">${show}</div></div>
@@ -1869,82 +1816,6 @@ async function initApp() {
   } catch(e) { console.warn('Realtime unavailable:', e.message); }
 }
 
-/* ── Excel List Manager ──────────────────────── */
-function xlSaveToConfig() {
-  const fn=[],src=[],dst=[];
-  document.querySelectorAll('#xlBody tr').forEach(tr=>{
-    const c=tr.querySelectorAll('.xl-cell');
-    const v0=c[0]?.value.trim().toUpperCase(); if(v0) fn.push(v0);
-    const v1=c[1]?.value.trim().toUpperCase(); if(v1) src.push(v1);
-    const v2=c[2]?.value.trim().toUpperCase(); if(v2) dst.push(v2);
-  });
-  CONFIG.feedNames=[...new Set(fn)]; CONFIG.sources=[...new Set(src)]; CONFIG.destinations=[...new Set(dst)];
-  saveListsToDB();
-  ['feedNames','sources','destinations'].forEach(k=>rebuildSelectForKey(k));
-}
-
-function xlRenumber() { document.querySelectorAll('#xlBody tr').forEach((r,i)=>{ r.querySelector('.row-num').textContent=i+1; }); }
-
-function xlAddGridRow(fn='',src='',dst='',focus=true) {
-  const tbody=document.getElementById('xlBody');
-  const tr=document.createElement('tr');
-  const rowNum=tbody.querySelectorAll('tr').length+1;
-  tr.innerHTML=`<td class="row-num">${rowNum}</td><td><input class="xl-cell" value="${fn}" placeholder="Feed name…" data-col="0"></td><td><input class="xl-cell" value="${src}" placeholder="Source…" data-col="1"></td><td><input class="xl-cell" value="${dst}" placeholder="Destination…" data-col="2"></td><td style="text-align:center"><button class="xl-del" title="Remove">✕</button></td>`;
-  tr.querySelector('.xl-del').addEventListener('click',()=>{ tr.remove(); xlRenumber(); xlSaveToConfig(); });
-  const cells=tr.querySelectorAll('.xl-cell');
-  cells.forEach((cell,idx)=>{
-    cell.addEventListener('blur',()=>xlSaveToConfig());
-    cell.addEventListener('keydown',e=>{
-      if (e.key==='Enter') { e.preventDefault(); xlAddGridRow('','','',true); }
-      if (e.key==='Tab'&&!e.shiftKey&&idx===cells.length-1) {
-        const allRows=document.querySelectorAll('#xlBody tr');
-        if (tr===allRows[allRows.length-1]) { e.preventDefault(); xlAddGridRow('','','',true); }
-      }
-    });
-  });
-  tbody.appendChild(tr);
-  if (focus) cells[0].focus();
-}
-
-function xlBuildGrid() {
-  const tbody=document.getElementById('xlBody'); tbody.innerHTML='';
-  const max=Math.max(CONFIG.feedNames.length,CONFIG.sources.length,CONFIG.destinations.length,1);
-  for(let i=0;i<max;i++) xlAddGridRow(CONFIG.feedNames[i]||'',CONFIG.sources[i]||'',CONFIG.destinations[i]||'',false);
-}
-
-document.getElementById('adminBtn').addEventListener('click',()=>{ xlBuildGrid(); document.getElementById('xlModal').classList.add('is-open'); });
-document.getElementById('xlClose').addEventListener('click',()=>document.getElementById('xlModal').classList.remove('is-open'));
-document.getElementById('xlModal').addEventListener('click',e=>{ if(e.target===document.getElementById('xlModal')) document.getElementById('xlModal').classList.remove('is-open'); });
-document.getElementById('xlAddRow').addEventListener('click',()=>xlAddGridRow('','','',true));
-
-document.getElementById('xlExportBtn').addEventListener('click',()=>{
-  const max=Math.max(CONFIG.feedNames.length,CONFIG.sources.length,CONFIG.destinations.length);
-  let csv='Feed Name,Source,Destination\n';
-  for(let i=0;i<max;i++) csv+=`"${CONFIG.feedNames[i]||''}","${CONFIG.sources[i]||''}","${CONFIG.destinations[i]||''}"\n`;
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='toc-lists.csv'; a.click();
-});
-document.getElementById('xlImportFile').addEventListener('change',e=>{
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const lines=ev.target.result.split(/[\r\n]+/).filter(l=>l.trim());
-    const start=lines[0].toLowerCase().includes('feed')?1:0;
-    CONFIG.feedNames=[];CONFIG.sources=[];CONFIG.destinations=[];
-    lines.slice(start).forEach(line=>{
-      const parts=line.split(',').map(p=>p.replace(/^"|"$/g,'').trim().toUpperCase());
-      if(parts[0])CONFIG.feedNames.push(parts[0]);
-      if(parts[1])CONFIG.sources.push(parts[1]);
-      if(parts[2])CONFIG.destinations.push(parts[2]);
-    });
-    CONFIG.feedNames=[...new Set(CONFIG.feedNames)]; CONFIG.sources=[...new Set(CONFIG.sources)]; CONFIG.destinations=[...new Set(CONFIG.destinations)];
-    saveListsToDB(); ['feedNames','sources','destinations'].forEach(k=>rebuildSelectForKey(k)); xlBuildGrid(); showStatus('Lists imported.');
-  };
-  reader.readAsText(file); e.target.value='';
-});
-
-
-// ── Working File ──────────────────────────────────────────────────────
-const WF_KEY = 'toc_wf';
 function saveWorkingFile() {
   try {
     localStorage.setItem(WF_KEY, JSON.stringify({
