@@ -123,6 +123,11 @@ body { font-family:'Red Hat Display',sans-serif; background:var(--surface-2); co
 .tag-sug:hover{background:var(--ink);color:var(--white);border-color:var(--ink);}
 .tag-clear{font-family:inherit;font-size:.7rem;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;padding:0;}
 .col-empty{padding:1rem;text-align:center;color:var(--ink-light);font-size:.8rem;font-style:italic;}
+.add-col-btn{font-family:inherit;font-size:.7rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;background:var(--ink);color:var(--white);border:none;border-radius:5px;padding:.4em .8em;cursor:pointer;flex-shrink:0;transition:opacity .12s;}
+.add-col-btn:hover{opacity:.8;}
+.sd-add-cell{gap:.5rem;}
+.item-del{opacity:.4 !important;}
+.item-del:hover{opacity:1 !important;color:var(--red);}
 </style>
 </head>
 <body>
@@ -177,9 +182,15 @@ body { font-family:'Red Hat Display',sans-serif; background:var(--surface-2); co
           <div class="sd-rows" id="sd-rows"></div>
         </div>
         <div class="sd-add-row">
-          <div class="sd-add-cell"><input id="src-add" placeholder="Add source…" autocomplete="off"></div>
+          <div class="sd-add-cell">
+            <input id="src-add" placeholder="Source name…" autocomplete="off">
+            <button class="add-col-btn" id="src-add-btn">+ Add Source</button>
+          </div>
           <div class="sd-add-gap"></div>
-          <div class="sd-add-cell"><input id="dst-add" placeholder="Add destination…" autocomplete="off"></div>
+          <div class="sd-add-cell">
+            <input id="dst-add" placeholder="Destination name…" autocomplete="off">
+            <button class="add-col-btn" id="dst-add-btn">+ Add Destination</button>
+          </div>
         </div>
       </div>
     </div>
@@ -374,7 +385,7 @@ function renderSD(){
     srcDel.addEventListener('click',()=>{
       const s=sources[i];
       delete sourceTags[s];
-      pairs.forEach(p=>{if(p.startsWith(s+'::'))pairs.delete(p);});
+      [...pairs].filter(p=>p.startsWith(s+'::')).forEach(p=>pairs.delete(p));
       sources.splice(i,1);
       renderSD();schedSave();
     });
@@ -428,7 +439,7 @@ function renderSD(){
 
     dstDel.addEventListener('click',()=>{
       const d=destinations[i];
-      pairs.forEach(p=>{if(p.endsWith('::'+d))pairs.delete(p);});
+      [...pairs].filter(p=>p.endsWith('::'+d)).forEach(p=>pairs.delete(p));
       destinations.splice(i,1);
       renderSD();schedSave();
     });
@@ -448,6 +459,7 @@ function updateLinkBtn(i){
 
 // Add source
 document.getElementById('src-add').addEventListener('keydown',e=>{if(e.key==='Enter')addSource();});
+document.getElementById('src-add-btn').addEventListener('click',addSource);
 function addSource(){
   const inp=document.getElementById('src-add');
   const v=inp.value.trim().toUpperCase();if(!v){inp.focus();return;}
@@ -457,6 +469,7 @@ function addSource(){
 
 // Add destination
 document.getElementById('dst-add').addEventListener('keydown',e=>{if(e.key==='Enter')addDest();});
+document.getElementById('dst-add-btn').addEventListener('click',addDest);
 function addDest(){
   const inp=document.getElementById('dst-add');
   const v=inp.value.trim().toUpperCase();if(!v){inp.focus();return;}
