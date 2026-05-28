@@ -1245,6 +1245,16 @@ function startEdit(idx) {
   document.getElementById('entryCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+function showMissingToast(missing) {
+  showToast(
+    missing.length === 1 ? `${missing[0]} is required` : `${missing.length} fields required`,
+    missing.length === 1 ? [] : missing
+  );
+  const focusMap = {'Feed Name':'wrap-feedName','Source':'wrap-source','Destination':'wrap-destination','Source Name':'sourceName'};
+  const el = document.getElementById(focusMap[missing[0]]);
+  if (el) el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 function collectEntry() {
   const entry = {
     feedName:    csGet('feedName'),
@@ -1434,6 +1444,19 @@ document.getElementById('templateNameInput').addEventListener('keydown', e => {
 
 
 /* ── Add + Next ─────────────────────────────────────────────── */
+function incrementStr(str) {
+  if (!str) return null;
+  const m = str.match(/^([\s\S]*?)(\d+)(\s*)$/);
+  if (!m) return null;
+  const prefix = m[1], numStr = m[2], suffix = m[3];
+  const next = parseInt(numStr, 10) + 1;
+  // preserve zero-pad only if original had a leading zero
+  const padded = numStr[0] === '0' && numStr.length > 1
+    ? String(next).padStart(numStr.length, '0')
+    : String(next);
+  return prefix + padded + suffix;
+}
+
 document.getElementById('addNextBtn').addEventListener('click', () => {
   const { entry, missing } = collectEntry();
   if (missing.length) { showMissingToast(missing); return; }
@@ -1949,6 +1972,18 @@ function loadWorkingFile() {
 document.addEventListener('input', ()=>saveWorkingFile());
 document.addEventListener('change', ()=>saveWorkingFile());
 window.addEventListener('beforeunload', saveWorkingFile);
+
+// ── Refresh data on tab focus / every 60s ──────────────────────────
+function refreshData() {
+  if (!db) return;
+  loadListsFromDB().then(() => {
+    ['feedNames','sources','destinations'].forEach(k => rebuildSelectForKey(k));
+    syncDropdownExclusions();
+  }).catch(()=>{});
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible') refreshData(); });
+window.addEventListener('focus', refreshData);
+setInterval(refreshData, 60000);
 
 </script>
 </body>
